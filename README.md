@@ -21,7 +21,7 @@ Zero dependencies — only Node.js built-in modules required.
 
 ## Requirements
 
-- Node.js ≥ 16
+- Node.js ≥ 16 (already available if OpenClaw is installed)
 - A running [OpenClaw](https://github.com/openclaw/openclaw) installation at `~/.openclaw/`
 - Desktop environment with a browser (for the GUI)
 
