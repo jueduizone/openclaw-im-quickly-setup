@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenClaw 配置向导</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :root {
+    --cyan: #00d4ff;
+    --cyan-dim: rgba(0,212,255,0.15);
+    --bg: #0d1117;
+    --card: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #7d8590;
+    --green: #3fb950;
+    --red: #f85149;
+    --yellow: #d29922;
+  }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+    font-size: 14px; min-height: 100vh; }
+  a { color: var(--cyan); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* Layout */
+  .page { max-width: 760px; margin: 0 auto; padding: 40px 20px 80px; }
+  .logo { display: flex; align-items: center; gap: 10px; margin-bottom: 36px; }
+  .logo-icon { font-size: 28px; }
+  .logo-text { font-size: 18px; font-weight: 700; color: var(--cyan); letter-spacing: -0.3px; }
+
+  /* Step indicator */
+  .steps { display: flex; align-items: center; gap: 0; margin-bottom: 40px; }
+  .step { display: flex; align-items: center; gap: 8px; }
+  .step-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0;
+    border: 2px solid var(--border); background: var(--card); color: var(--muted); transition: all .3s; }
+  .step-dot.active { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 10px rgba(0,212,255,0.3); }
+  .step-dot.done { background: var(--cyan); border-color: var(--cyan); color: #000; }
+  .step-label { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .step-label.active { color: var(--cyan); }
+  .step-line { flex: 1; height: 1px; background: var(--border); margin: 0 8px; min-width: 16px; }
+
+  /* Panels */
+  .panel { display: none; }
+  .panel.active { display: block; animation: fadeIn .25s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  /* Typography */
+  h1 { font-size: 26px; font-weight: 800; margin: 0 0 10px; letter-spacing: -0.5px; }
+  h2 { font-size: 20px; font-weight: 700; margin: 0 0 8px; }
+  h3 { font-size: 15px; font-weight: 700; margin: 0 0 6px; }
+  p { margin: 0 0 14px; color: var(--muted); line-height: 1.6; }
+  .lead { font-size: 15px; color: var(--text); }
+
+  /* Card */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+  .card:last-child { margin-bottom: 0; }
+
+  /* IM selector cards */
+  .im-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+  .im-card { background: var(--card); border: 2px solid var(--border); border-radius: 10px; padding: 18px;
+    cursor: pointer; transition: all .2s; user-select: none; position: relative; }
+  .im-card:hover { border-color: var(--cyan); background: rgba(0,212,255,0.05); }
+  .im-card.selected { border-color: var(--cyan); background: rgba(0,212,255,0.08); }
+  .im-card .checkmark { position: absolute; top: 12px; right: 12px; width: 20px; height: 20px;
+    border-radius: 50%; border: 2px solid var(--border); background: var(--bg);
+    display: flex; align-items: center; justify-content: center; font-size: 11px; transition: all .2s; }
+  .im-card.selected .checkmark { background: var(--cyan); border-color: var(--cyan); color: #000; }
+  .im-card .im-icon { font-size: 24px; margin-bottom: 8px; }
+  .im-card .im-name { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+  .im-card .im-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .im-card .im-badge { display: inline-block; background: var(--cyan); color: #000; font-size: 10px;
+    font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle; }
+
+  /* Sub-option selector */
+  .sub-options { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .sub-opt { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border);
+    font-size: 12px; cursor: pointer; transition: all .2s; color: var(--muted); }
+  .sub-opt:hover { border-color: var(--cyan); color: var(--text); }
+  .sub-opt.active { border-color: var(--cyan); background: var(--cyan-dim); color: var(--cyan); font-weight: 600; }
+
+  /* Form */
+  .field { margin-bottom: 20px; }
+  .field:last-child { margin-bottom: 0; }
+  label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; color: var(--text); }
+  input[type=text], input[type=password] {
+    width: 100%; padding: 9px 12px; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-size: 14px; font-family: inherit; outline: none;
+    transition: border-color .15s;
+  }
+  input:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(0,212,255,0.12); }
+  input::placeholder { color: var(--muted); }
+
+  /* Hint box */
+  .hint { background: rgba(0,212,255,0.06); border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 6px; padding: 12px 14px; margin-top: 8px; font-size: 12px;
+    color: var(--muted); line-height: 1.7; }
+  .hint strong { color: var(--cyan); }
+  .hint ol, .hint ul { margin: 6px 0 0 0; padding-left: 18px; }
+  .hint li { margin-bottom: 3px; }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; gap: 7px; padding: 10px 22px;
+    border-radius: 7px; font-size: 14px; font-weight: 600; cursor: pointer;
+    border: none; transition: all .15s; }
+  .btn-primary { background: var(--cyan); color: #000; }
+  .btn-primary:hover { background: #00bfe8; box-shadow: 0 0 16px rgba(0,212,255,0.3); }
+  .btn-primary:disabled { background: #1a3a40; color: var(--muted); cursor: not-allowed; box-shadow: none; }
+  .btn-secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--cyan); color: var(--cyan); }
+  .btn-ghost { background: none; color: var(--muted); padding: 10px 14px; }
+  .btn-ghost:hover { color: var(--text); }
+  .btn-sm { padding: 6px 14px; font-size: 12px; }
+  .btn-row { display: flex; gap: 10px; align-items: center; margin-top: 24px; flex-wrap: wrap; }
+
+  /* Status badge */
+  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px;
+    border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .badge-ok { background: rgba(63,185,80,0.15); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
+  .badge-err { background: rgba(248,81,73,0.15); color: var(--red); border: 1px solid rgba(248,81,73,0.3); }
+  .badge-warn { background: rgba(210,153,34,0.15); color: var(--yellow); border: 1px solid rgba(210,153,34,0.3); }
+  .badge-pending { background: rgba(0,212,255,0.1); color: var(--cyan); border: 1px solid rgba(0,212,255,0.2); }
+
+  /* Test result */
+  .test-result { margin-top: 10px; padding: 10px 14px; border-radius: 6px; font-size: 13px; display: none; }
+  .test-result.show { display: block; }
+  .test-result.ok { background: rgba(63,185,80,0.1); border: 1px solid rgba(63,185,80,0.3); color: var(--green); }
+  .test-result.err { background: rgba(248,81,73,0.1); border: 1px solid rgba(248,81,73,0.3); color: var(--red); }
+
+  /* Section header */
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .section-header .im-icon-lg { font-size: 32px; }
+  .section-divider { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+
+  /* Progress */
+  .progress-log { background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+    padding: 14px; font-family: monospace; font-size: 12px; line-height: 1.8;
+    max-height: 180px; overflow-y: auto; margin-top: 14px; }
+  .log-ok { color: var(--green); }
+  .log-err { color: var(--red); }
+  .log-info { color: var(--cyan); }
+  .log-warn { color: var(--yellow); }
+
+  /* Welcome hero */
+  .hero { text-align: center; padding: 40px 0 20px; }
+  .hero .hero-icon { font-size: 56px; margin-bottom: 16px; }
+  .hero h1 { font-size: 28px; margin-bottom: 12px; }
+  .hero p { max-width: 480px; margin: 0 auto 28px; font-size: 15px; }
+
+  /* Feature list */
+  .feature-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 32px; }
+  .feature-item { background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px; text-align: center; }
+  .feature-item .fi-icon { font-size: 22px; margin-bottom: 6px; }
+  .feature-item .fi-name { font-size: 13px; font-weight: 600; }
+  .feature-item .fi-desc { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  /* Done page */
+  .done-hero { text-align: center; padding: 48px 0; }
+  .done-hero .done-icon { font-size: 64px; margin-bottom: 16px; }
+  .done-summary { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 20px 0; }
+
+  @media (max-width: 580px) {
+    .im-grid { grid-template-columns: 1fr; }
+    .feature-list { grid-template-columns: 1fr 1fr; }
+    h1 { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <!-- Logo -->
+  <div class="logo">
+    <span class="logo-icon">🦞</span>
+    <span class="logo-text">OpenClaw Setup</span>
+  </div>
+
+  <!-- Step Indicator -->
+  <div class="steps" id="stepBar">
+    <div class="step"><div class="step-dot active" id="dot-0">1</div><span class="step-label active" id="lbl-0">欢迎</span></div>
+    <div class="step-line"></div>
+    <div class="step"><div class="step-dot" id="dot-1">2</div><span class="step-label" id="lbl-1">选择 IM</span></div>
+    <div class="step-line"></div>
+    <div class="step"><div class="step-dot" id="dot-2">3</div><span class="step-label" id="lbl-2">配置</span></div>
+    <div class="step-line"></div>
+    <div class="step"><div class="step-dot" id="dot-3">4</div><span class="step-label" id="lbl-3">测试</span></div>
+    <div class="step-line"></div>
+    <div class="step"><div class="step-dot" id="dot-4">5</div><span class="step-label" id="lbl-4">完成</span></div>
+  </div>
+
+  <!-- ===== STEP 0: Welcome ===== -->
+  <div class="panel active" id="panel-0">
+    <div class="hero">
+      <div class="hero-icon">🦞</div>
+      <h1>配置 OpenClaw 消息集成</h1>
+      <p class="lead">这个向导将帮助你把 Telegram、微信、飞书接入 OpenClaw AI 助手，让 AI 在你常用的聊天工具里响应你。</p>
+    </div>
+    <div class="feature-list">
+      <div class="feature-item"><div class="fi-icon">✈️</div><div class="fi-name">Telegram</div><div class="fi-desc">最推荐，配置最简单</div></div>
+      <div class="feature-item"><div class="fi-icon">💬</div><div class="fi-name">微信</div><div class="fi-desc">企业机器人 / 个人接入</div></div>
+      <div class="feature-item"><div class="fi-icon">🪶</div><div class="fi-name">飞书</div><div class="fi-desc">自建应用 Bot，私聊+群聊</div></div>
+    </div>
+    <div style="text-align:center;">
+      <button class="btn btn-primary" style="font-size:16px; padding:12px 36px;" onclick="goStep(1)">
+        开始配置 →
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== STEP 1: Select IM ===== -->
+  <div class="panel" id="panel-1">
+    <h2>选择要接入的 IM</h2>
+    <p>可以同时选多个，向导会逐一引导你配置。</p>
+
+    <div class="im-grid">
+      <div class="im-card" id="card-telegram" onclick="toggleIM('telegram')">
+        <div class="checkmark">✓</div>
+        <div class="im-icon">✈️</div>
+        <div class="im-name">Telegram <span class="im-badge">推荐</span></div>
+        <div class="im-desc">通过 BotFather 创建机器人，配置最简单，5 分钟内完成。</div>
+        <div id="badge-telegram" style="display:none; margin-top:8px;"></div>
+      </div>
+      <div class="im-card" id="card-weixin" onclick="toggleIM('weixin')">
+        <div class="checkmark">✓</div>
+        <div class="im-icon">💬</div>
+        <div class="im-name">微信</div>
+        <div class="im-desc">支持企业微信群机器人 Webhook，以及 WeixinClawBot 个人接入。</div>
+        <div id="badge-weixin" style="display:none; margin-top:8px;"></div>
+      </div>
+      <div class="im-card" id="card-feishu" onclick="toggleIM('feishu')">
+        <div class="checkmark">✓</div>
+        <div class="im-icon">🪶</div>
+        <div class="im-name">飞书</div>
+        <div class="im-desc">自建应用 Bot，支持私聊和群聊双向交互。</div>
+        <div id="badge-feishu" style="display:none; margin-top:8px;"></div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="goStep(0)">← 返回</button>
+      <button class="btn btn-primary" id="btn-next-1" onclick="goStep(2)" disabled>下一步 →</button>
+    </div>
+  </div>
+
+  <!-- ===== STEP 2: Configure ===== -->
+  <div class="panel" id="panel-2">
+    <h2>填写配置信息</h2>
+    <p>为选中的每个 IM 填写必要的凭证。每个字段旁边都有获取方式说明。</p>
+
+    <!-- Telegram -->
+    <div id="cfg-telegram" style="display:none;">
+      <div class="card">
+        <div class="section-header">
+          <span class="im-icon-lg">✈️</span>
+          <div><h3 style="margin:0 0 2px;">Telegram Bot</h3><div style="font-size:12px;color:var(--muted);">通过 BotFather 创建机器人</div></div>
+        </div>
+        <div class="field">
+          <label>Bot Token <span style="color:var(--red)">*</span></label>
+          <input type="password" id="tg-token" placeholder="110201543:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw" autocomplete="off">
+          <div class="hint">
+            <strong>如何获取 Bot Token：</strong>
+            <ol>
+              <li>打开 Telegram，搜索 <strong>@BotFather</strong></li>
+              <li>发送 <code>/newbot</code>，按提示给机器人起名</li>
+              <li>BotFather 会返回一串 Token，格式如 <code>123456789:ABCdef...</code></li>
+              <li>复制这串 Token 填入上方</li>
+            </ol>
+            <a href="https://core.telegram.org/bots#how-do-i-create-a-bot" target="_blank">→ 官方文档</a>
+          </div>
+        </div>
+        <div class="field">
+          <label>允许的用户 ID（可选，逗号分隔）</label>
+          <input type="text" id="tg-allowed" placeholder="123456789,987654321">
+          <div class="hint">
+            <strong>如何获取你的 Telegram 用户 ID：</strong>
+            在 Telegram 中发消息给 <a href="https://t.me/userinfobot" target="_blank">@userinfobot</a>，它会回复你的数字 ID。
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="testTelegram()">🧪 测试连接</button>
+        <div class="test-result" id="tg-result"></div>
+      </div>
+      <hr class="section-divider">
+    </div>
+
+    <!-- Weixin -->
+    <div id="cfg-weixin" style="display:none;">
+      <div class="card">
+        <div class="section-header">
+          <span class="im-icon-lg">💬</span>
+          <div><h3 style="margin:0 0 2px;">微信接入方式</h3><div style="font-size:12px;color:var(--muted);">选择你要使用的接入类型</div></div>
+        </div>
+        <div class="sub-options">
+          <div class="sub-opt active" id="wx-opt-enterprise" onclick="setWeixinMode('enterprise')">企业微信群机器人</div>
+          <div class="sub-opt" id="wx-opt-personal" onclick="setWeixinMode('personal')">个人微信（开放平台）</div>
+        </div>
+
+        <!-- Enterprise Webhook -->
+        <div id="wx-enterprise">
+          <div class="field">
+            <label>企业微信机器人 Webhook URL <span style="color:var(--red)">*</span></label>
+            <input type="text" id="wx-webhook" placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=...">
+            <div class="hint">
+              <strong>如何获取 Webhook URL：</strong>
+              <ol>
+                <li>在企业微信客户端中，打开目标群聊</li>
+                <li>点击右上角「…」→「添加群机器人」</li>
+                <li>创建新机器人，复制 <strong>Webhook 地址</strong></li>
+              </ol>
+            </div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="testWeixinWebhook()">🧪 测试连接</button>
+          <div class="test-result" id="wx-result"></div>
+        </div>
+
+        <!-- Personal -->
+        <div id="wx-personal" style="display:none;">
+          <div class="hint" style="margin-bottom:14px;">
+            <strong>个人微信接入（WeixinClawBot 官方插件）：</strong>
+            <ol>
+              <li>在运行 OpenClaw 的设备上，打开终端执行安装命令：<br>
+                <code style="background:rgba(0,0,0,0.3);padding:3px 8px;border-radius:4px;display:inline-block;margin:4px 0;">npx -y @tencent-weixin/openclaw-weixin-cli@latest install</code>
+              </li>
+              <li>命令运行后会展示一个 QR 码</li>
+              <li>用你的微信扫描 QR 码完成授权</li>
+              <li>授权成功后 WeixinClawBot 插件即激活，无需填写 Token</li>
+            </ol>
+            <div style="margin-top:8px; color:var(--cyan);">⚠️ 此步骤需在终端手动完成，本向导会帮你启用对应插件配置。</div>
+          </div>
+          <div class="field">
+            <label>已完成扫码授权？</label>
+            <div style="display:flex; gap:10px; margin-top:6px;">
+              <button class="btn btn-secondary btn-sm" id="wx-personal-installed" onclick="markWeixinPersonalDone()">✅ 已完成安装和扫码</button>
+              <span id="wx-personal-status" style="font-size:12px; color:var(--muted); align-self:center;"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <hr class="section-divider">
+    </div>
+
+    <!-- Feishu -->
+    <div id="cfg-feishu" style="display:none;">
+      <div class="card">
+        <div class="section-header">
+          <span class="im-icon-lg">🪶</span>
+          <div><h3 style="margin:0 0 2px;">飞书自建应用 Bot</h3><div style="font-size:12px;color:var(--muted);">支持私聊 + 群聊双向交互</div></div>
+        </div>
+
+        <div style="background:rgba(210,153,34,0.1);border:1px solid rgba(210,153,34,0.3);border-radius:6px;padding:12px 16px;font-size:12px;color:var(--yellow);margin-bottom:16px;line-height:1.8;">
+          ⚠️ <strong>配置前必须在飞书开放平台完成以下全部步骤，否则无法收到消息：</strong><br>
+          ① 添加「机器人」能力 &nbsp;→&nbsp;
+          ② 开通权限 &nbsp;→&nbsp;
+          ③ 订阅事件（注意手动点开启） &nbsp;→&nbsp;
+          ④ 发布版本
+        </div>
+
+        <div class="field">
+          <label>App ID <span style="color:var(--red)">*</span></label>
+          <input type="text" id="fs-appid" placeholder="cli_xxxxxxxxxxxx">
+          <div class="hint">
+            <strong>📋 完整配置流程（共 6 步）</strong>
+            <ol style="margin-top:8px;line-height:2.2;">
+              <li>访问 <a href="https://open.feishu.cn/app" target="_blank">飞书开放平台</a> → 「创建企业自建应用」→「凭证与基础信息」复制 <strong>App ID</strong> 和 <strong>App Secret</strong></li>
+              <li>左侧「添加应用能力」→ 找到 <strong>机器人</strong> → 点「配置」启用</li>
+              <li>
+                左侧「权限管理」→ 搜索并开通以下权限（缺一不可）：
+                <ul style="margin:4px 0 0 16px;line-height:2;">
+                  <li><code>im:message</code>（发送消息，私聊+群聊必须）</li>
+                  <li><code>im:message.p2p_msg:readonly</code>（读取私聊消息）</li>
+                </ul>
+              </li>
+              <li>
+                左侧「事件与回调」→「事件配置」→ 点「添加事件」→ 搜索并添加 <strong>接收消息（im.message.receive_v1）</strong><br>
+                <span style="color:var(--red);">⚠️ 添加事件后，右侧「所需权限」里的每条权限需要单独点击「开启」按钮才生效！</span><br>
+                需开启：<code>im:message.p2p_msg:readonly</code>（私聊）+ <code>im:message:group_at_msg:readonly</code>（群聊 @ 机器人）
+              </li>
+              <li>
+                如需群聊：在飞书群聊中，点右上角「群设置」→「群机器人」→「添加机器人」→ 选择你的自建应用加入群
+              </li>
+              <li>左侧「版本管理与发布」→「创建版本」→「提交发布」（企业内部应用需管理员审批）</li>
+            </ol>
+            <a href="https://open.feishu.cn/document/home/develop-a-bot-in-5-minutes/step-1" target="_blank">→ 5分钟快速上手飞书机器人</a>
+            &nbsp;&nbsp;
+            <a href="https://open.feishu.cn/document/faq/trouble-shooting/bot" target="_blank">→ 机器人常见问题</a>
+          </div>
+        </div>
+        <div class="field">
+          <label>App Secret <span style="color:var(--red)">*</span></label>
+          <input type="password" id="fs-secret" placeholder="xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="goStep(1)">← 返回</button>
+      <button class="btn btn-primary" onclick="goStep(3)">下一步 →</button>
+    </div>
+  </div>
+
+  <!-- ===== STEP 3: Test & Save ===== -->
+  <div class="panel" id="panel-3">
+    <h2>确认并保存配置</h2>
+    <p>检查下方配置摘要，确认无误后点击「保存并重启」，OpenClaw 将自动应用新配置。</p>
+
+    <div class="card" id="summary-card">
+      <h3 style="margin-bottom:14px;">📋 配置摘要</h3>
+      <div id="summary-content"></div>
+    </div>
+
+    <div class="progress-log" id="save-log" style="display:none;"></div>
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="goStep(2)">← 返回修改</button>
+      <button class="btn btn-primary" id="btn-save" onclick="saveConfig()">
+        💾 保存并重启 Gateway
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== STEP 4: Done ===== -->
+  <div class="panel" id="panel-4">
+    <div class="done-hero">
+      <div class="done-icon">🎉</div>
+      <h1>配置完成！</h1>
+      <p class="lead">OpenClaw 已成功配置消息集成，Gateway 正在运行中。</p>
+      <div class="done-summary" id="done-summary"></div>
+      <div class="card" style="text-align:left; max-width:480px; margin:0 auto 24px;">
+        <h3>接下来可以做什么？</h3>
+        <ul style="color:var(--muted); line-height:2; padding-left:18px; margin:8px 0 0;">
+          <li>在 Telegram 中向你的 Bot 发消息，测试 AI 响应</li>
+          <li>运行 <code style="background:var(--bg);padding:2px 6px;border-radius:4px;color:var(--cyan);">openclaw status</code> 查看 Gateway 状态</li>
+          <li>编辑 <code style="background:var(--bg);padding:2px 6px;border-radius:4px;color:var(--cyan);">~/.openclaw/SOUL.md</code> 定制 AI 人格</li>
+          <li>再次运行此向导可修改 IM 配置</li>
+        </ul>
+      </div>
+      <button class="btn btn-secondary" onclick="window.close()">关闭窗口</button>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+const state = {
+  step: 0,
+  selected: new Set(),     // 'telegram' | 'weixin' | 'feishu'
+  weixinMode: 'enterprise',
+  feishuMode: 'app',
+  weixinPersonalInstalled: false,
+  existingBound: {},       // 已绑定状态（从 API 获取）
+  existingDetails: {},     // 已配置详情（用于回填）
+};
+
+// ── Init: detect existing bindings ────────────────────────────────────────────
+async function initStatus() {
+  try {
+    const r = await fetch('/api/status');
+    const d = await r.json();
+    state.existingBound = d.bound || {};
+    state.existingDetails = d.details || {};
+
+    // 显示已配置 badge
+    if (d.status?.telegram) {
+      showBoundBadge('telegram', 'Telegram 已绑定');
+    }
+    if (d.status?.weixin) {
+      const label = state.existingBound.weixin_personal ? '个人微信已绑定' : '企业微信已绑定';
+      showBoundBadge('weixin', label);
+    }
+    if (d.status?.feishu) {
+      const label = state.existingBound.feishu_app ? '飞书已绑定' : '飞书已绑定';
+      showBoundBadge('feishu', label);
+    }
+
+    // 回填已有配置到表单
+    if (d.details?.telegram?.botToken) {
+      document.getElementById('tg-token').value = d.details.telegram.botToken;
+      if (d.details.telegram.allowFrom?.length) {
+        document.getElementById('tg-allowed').value = d.details.telegram.allowFrom.join(',');
+      }
+    }
+    if (d.details?.feishu?.appId) {
+      document.getElementById('fs-appid').value = d.details.feishu.appId;
+    }
+    if (d.details?.weixin_enterprise?.webhookUrl) {
+      document.getElementById('wx-webhook').value = d.details.weixin_enterprise.webhookUrl;
+    }
+    if (d.details?.weixin_personal) {
+      state.weixinPersonalInstalled = true;
+      const el = document.getElementById('wx-personal-status');
+      if (el) {
+        el.textContent = '✅ 已绑定（WeixinClawBot 运行中）';
+        el.style.color = 'var(--green)';
+      }
+    }
+  } catch(e) {
+    console.warn('Status check failed:', e.message);
+  }
+}
+
+function showBoundBadge(im, label) {
+  const el = document.getElementById(`badge-${im}`);
+  if (!el) return;
+  el.innerHTML = `<span class="badge badge-ok">✅ ${label}</span>`;
+  el.style.display = '';
+  // 高亮卡片边框为绿色
+  const card = document.getElementById(`card-${im}`);
+  if (card && !card.classList.contains('selected')) {
+    card.style.borderColor = 'var(--green)';
+  }
+}
+
+window.addEventListener('DOMContentLoaded', initStatus);
+
+// ── Step navigation ────────────────────────────────────────────────────────────
+function goStep(n) {
+  // Validate step 2 before proceeding to 3
+  if (n === 3 && !validateConfig()) return;
+
+  document.getElementById(`panel-${state.step}`).classList.remove('active');
+  state.step = n;
+  document.getElementById(`panel-${n}`).classList.add('active');
+  updateStepBar();
+
+  if (n === 3) buildSummary();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateStepBar() {
+  for (let i = 0; i < 5; i++) {
+    const dot = document.getElementById(`dot-${i}`);
+    const lbl = document.getElementById(`lbl-${i}`);
+    dot.className = 'step-dot' + (i < state.step ? ' done' : i === state.step ? ' active' : '');
+    dot.textContent = i < state.step ? '✓' : i + 1;
+    lbl.className = 'step-label' + (i === state.step ? ' active' : '');
+  }
+}
+
+// ── IM selection ───────────────────────────────────────────────────────────────
+function toggleIM(id) {
+  if (state.selected.has(id)) {
+    state.selected.delete(id);
+    document.getElementById(`card-${id}`).classList.remove('selected');
+  } else {
+    state.selected.add(id);
+    document.getElementById(`card-${id}`).classList.add('selected');
+  }
+  document.getElementById('btn-next-1').disabled = state.selected.size === 0;
+  updateConfigPanels();
+}
+
+function updateConfigPanels() {
+  ['telegram','weixin','feishu'].forEach(id => {
+    document.getElementById(`cfg-${id}`).style.display = state.selected.has(id) ? '' : 'none';
+  });
+}
+
+// ── Weixin / Feishu sub-modes ──────────────────────────────────────────────────
+function setWeixinMode(mode) {
+  state.weixinMode = mode;
+  document.getElementById('wx-opt-enterprise').className = 'sub-opt' + (mode === 'enterprise' ? ' active' : '');
+  document.getElementById('wx-opt-personal').className = 'sub-opt' + (mode === 'personal' ? ' active' : '');
+  document.getElementById('wx-enterprise').style.display = mode === 'enterprise' ? '' : 'none';
+  document.getElementById('wx-personal').style.display = mode === 'personal' ? '' : 'none';
+}
+
+function markWeixinPersonalDone() {
+  state.weixinPersonalInstalled = true;
+  document.getElementById('wx-personal-status').textContent = '✅ 已标记，保存时将启用微信插件';
+  document.getElementById('wx-personal-status').style.color = 'var(--green)';
+}
+
+// ── Validation ─────────────────────────────────────────────────────────────────
+function validateConfig() {
+  if (state.selected.has('telegram')) {
+    const token = document.getElementById('tg-token').value.trim();
+    if (!token) { alert('请填写 Telegram Bot Token'); return false; }
+  }
+  if (state.selected.has('weixin') && state.weixinMode === 'enterprise') {
+    const url = document.getElementById('wx-webhook').value.trim();
+    if (!url) { alert('请填写企业微信 Webhook URL'); return false; }
+  }
+  if (state.selected.has('weixin') && state.weixinMode === 'personal') {
+    if (!state.weixinPersonalInstalled) {
+      alert('请先完成个人微信安装和扫码授权，然后点击「已完成安装和扫码」按钮'); return false;
+    }
+  }
+  if (state.selected.has('feishu')) {
+    if (!document.getElementById('fs-appid').value.trim() || !document.getElementById('fs-secret').value.trim()) {
+      alert('请填写飞书 App ID 和 App Secret'); return false;
+    }
+  }
+  return true;
+}
+
+// ── Test connections ───────────────────────────────────────────────────────────
+async function testTelegram() {
+  const token = document.getElementById('tg-token').value.trim();
+  const el = document.getElementById('tg-result');
+  if (!token) { showResult(el, false, '请先填写 Bot Token'); return; }
+  showResult(el, null, '测试中...');
+  const r = await api('/api/test-telegram', { token });
+  if (r.ok) {
+    showResult(el, true, `✅ 连接成功！Bot 名称：${r.botName} (@${r.username})`);
+  } else {
+    showResult(el, false, `❌ ${r.error || '连接失败'}`);
+  }
+}
+
+async function testWeixinWebhook() {
+  const webhookUrl = document.getElementById('wx-webhook').value.trim();
+  const el = document.getElementById('wx-result');
+  if (!webhookUrl) { showResult(el, false, '请先填写 Webhook URL'); return; }
+  showResult(el, null, '发送测试消息中...');
+  const r = await api('/api/test-weixin-webhook', { webhookUrl });
+  if (r.ok) {
+    showResult(el, true, '✅ 测试消息发送成功，请在群里查看');
+  } else {
+    showResult(el, false, `❌ ${r.error || '发送失败'}`);
+  }
+}
+
+async function testFeishuWebhook() { /* removed */ }
+
+function showResult(el, ok, msg) {
+  el.className = 'test-result show ' + (ok === true ? 'ok' : ok === false ? 'err' : '');
+  el.textContent = msg;
+}
+
+// ── Summary ────────────────────────────────────────────────────────────────────
+function buildSummary() {
+  const rows = [];
+  if (state.selected.has('telegram')) {
+    const token = document.getElementById('tg-token').value.trim();
+    rows.push(`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+      <span>✈️</span>
+      <div><strong>Telegram</strong><br><span style="color:var(--muted);font-size:12px;">Token: ${maskSecret(token)}</span></div>
+    </div>`);
+  }
+  if (state.selected.has('weixin')) {
+    if (state.weixinMode === 'enterprise') {
+      const url = document.getElementById('wx-webhook').value.trim();
+      rows.push(`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+        <span>💬</span>
+        <div><strong>企业微信群机器人</strong><br><span style="color:var(--muted);font-size:12px;">Webhook: ${maskUrl(url)}</span></div>
+      </div>`);
+    } else {
+      rows.push(`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+        <span>💬</span>
+        <div><strong>微信个人接入</strong><br><span style="color:var(--muted);font-size:12px;">通过 openclaw-weixin 插件</span></div>
+      </div>`);
+    }
+  }
+  if (state.selected.has('feishu')) {
+    const appId = document.getElementById('fs-appid').value.trim();
+    rows.push(`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;">
+      <span>🪶</span>
+      <div><strong>飞书自建应用</strong><br><span style="color:var(--muted);font-size:12px;">App ID: ${appId}</span></div>
+    </div>`);
+  }
+  document.getElementById('summary-content').innerHTML = rows.join('') || '<p style="color:var(--muted)">无配置项</p>';
+}
+
+function maskSecret(s) {
+  if (!s) return '(空)';
+  return s.slice(0, 8) + '••••••' + s.slice(-4);
+}
+function maskUrl(u) {
+  if (!u) return '(空)';
+  try { const parsed = new URL(u); return parsed.origin + '/...'; } catch { return u.slice(0, 30) + '...'; }
+}
+
+// ── Save config ────────────────────────────────────────────────────────────────
+async function saveConfig() {
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true;
+  btn.textContent = '保存中...';
+
+  const logEl = document.getElementById('save-log');
+  logEl.style.display = '';
+  logEl.innerHTML = '';
+
+  function log(msg, cls = '') {
+    logEl.innerHTML += `<div class="${cls}">${msg}</div>`;
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  const payload = {};
+
+  if (state.selected.has('telegram')) {
+    payload.telegram = {
+      enabled: true,
+      botToken: document.getElementById('tg-token').value.trim(),
+    };
+    log('<span class="log-info">→ 写入 Telegram 配置...</span>');
+  }
+
+  if (state.selected.has('weixin')) {
+    if (state.weixinMode === 'enterprise') {
+      payload.weixinWebhook = {
+        enabled: true,
+        webhookUrl: document.getElementById('wx-webhook').value.trim(),
+      };
+      log('<span class="log-info">→ 写入企业微信 Webhook 配置...</span>');
+    } else {
+      payload.weixinPersonal = {
+        enabled: true,
+        installed: true,
+      };
+      log('<span class="log-info">→ 写入微信个人接入配置（WeixinClawBot 插件）...</span>');
+    }
+  }
+
+  if (state.selected.has('feishu')) {
+    payload.feishu = {
+      enabled: true,
+      appId: document.getElementById('fs-appid').value.trim(),
+      appSecret: document.getElementById('fs-secret').value.trim(),
+    };
+    log('<span class="log-info">→ 写入飞书应用配置...</span>');
+  }
+
+  try {
+    const r = await api('/api/save', payload);
+    if (r.ok) {
+      log('<span class="log-ok">✅ 配置文件写入成功（已备份原文件）</span>');
+      if (r.restart?.ok) {
+        log('<span class="log-ok">✅ openclaw gateway restart 成功</span>');
+      } else if (r.restart?.warning) {
+        log(`<span class="log-warn">⚠ Gateway 重启：${r.restart.warning}</span>`);
+      }
+      setTimeout(() => {
+        buildDonePage();
+        goStep(4);
+      }, 1200);
+    } else {
+      log(`<span class="log-err">❌ 保存失败：${r.error}</span>`);
+      btn.disabled = false;
+      btn.textContent = '💾 保存并重启 Gateway';
+    }
+  } catch (e) {
+    log(`<span class="log-err">❌ 请求失败：${e.message}</span>`);
+    btn.disabled = false;
+    btn.textContent = '💾 保存并重启 Gateway';
+  }
+}
+
+function buildDonePage() {
+  const items = [];
+  if (state.selected.has('telegram')) items.push('<span class="badge badge-ok">✈️ Telegram</span>');
+  if (state.selected.has('weixin'))   items.push('<span class="badge badge-ok">💬 微信</span>');
+  if (state.selected.has('feishu'))   items.push('<span class="badge badge-ok">🪶 飞书</span>');
+  document.getElementById('done-summary').innerHTML = items.join(' ');
+}
+
+// ── API helper ─────────────────────────────────────────────────────────────────
+async function api(endpoint, body) {
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return await res.json();
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+// Load existing config status
+(async () => {
+  try {
+    const res = await fetch('/api/status');
+    const data = await res.json();
+    if (data.status?.telegram) {
+      document.getElementById('card-telegram').querySelector('.im-desc').innerHTML +=
+        ' <span class="badge badge-ok" style="margin-left:4px;">已配置</span>';
+    }
+  } catch {}
+})();
+</script>
+</body>
+</html>

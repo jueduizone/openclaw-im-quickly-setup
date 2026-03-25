@@ -1,0 +1,13 @@
+{
+  "name": "openclaw-setup",
+  "version": "1.0.0",
+  "description": "OpenClaw IM 配置向导",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT"
+}
