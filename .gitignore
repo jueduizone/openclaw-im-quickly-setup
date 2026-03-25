@@ -1,0 +1,14 @@
+# OpenClaw config (contains tokens/secrets)
+*.json.setup-bak
+openclaw.json
+credentials/
+.env
+*.key
+*.secret
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
