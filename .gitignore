@@ -6,6 +6,10 @@ credentials/
 *.key
 *.secret
 
+# Build artifacts
+dist/
+server.cjs
+
 # OS
 .DS_Store
 Thumbs.db
