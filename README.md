@@ -35,7 +35,7 @@ cd openclaw-im-quickly-setup
 node server.js
 ```
 
-The wizard opens automatically at `http://localhost:3131`.
+The wizard opens automatically at `http://127.0.0.1:3131`.
 
 ---
 
@@ -72,7 +72,7 @@ The `.desktop` file starts the server and opens the browser automatically:
 [Desktop Entry]
 Name=OpenClaw 配置向导
 Comment=Configure IM integrations for OpenClaw
-Exec=bash -c 'cd /opt/openclaw-setup && node server.js & sleep 1 && xdg-open http://localhost:3131'
+Exec=bash -c 'cd /opt/openclaw-setup && node server.js & sleep 1 && xdg-open http://127.0.0.1:3131'
 Icon=/opt/openclaw-setup/public/icon.png
 Terminal=false
 Type=Application

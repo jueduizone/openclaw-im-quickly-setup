@@ -55,7 +55,7 @@ function json(res, status, data) {
 }
 
 const server = http.createServer(async (req, res) => {
-  const url = new URL(req.url, `http://localhost:${PORT}`);
+  const url = new URL(req.url, `http://127.0.0.1:${PORT}`);
   const pathname = url.pathname;
 
   if (req.method === 'OPTIONS') {
@@ -286,7 +286,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, '127.0.0.1', () => {
-  const url = `http://localhost:${PORT}`;
+  const url = `http://127.0.0.1:${PORT}`;
   console.log(`\n🦞 OpenClaw Setup  →  ${url}\n`);
   // Auto-open browser
   const opener = process.platform === 'darwin' ? 'open' : 'xdg-open';
