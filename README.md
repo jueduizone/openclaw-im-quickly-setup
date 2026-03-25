@@ -4,7 +4,7 @@ A lightweight web-based wizard for configuring IM integrations (Telegram, WeChat
 
 Zero dependencies — only Node.js built-in modules required.
 
-![screenshot](https://raw.githubusercontent.com/callmeianx/openclaw-im-quickly-setup/main/docs/screenshot.png)
+![screenshot](https://raw.githubusercontent.com/jueduizone/openclaw-im-quickly-setup/main/docs/screenshot.png)
 
 ---
 
